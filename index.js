@@ -41,6 +41,37 @@ async function run() {
       res.send(result);
     });
 
+    // Warning: This is not the proper way to query multiple collection.
+    // After learning more about mongodb. use aggregate, lookup, pipeline, match, group
+    app.get('/available', async (req, res) => {
+      const date = req.query.date;
+
+      // step 1: Get all services
+      const services = await serviceCollection.find().toArray();
+
+      // stet 2: Get the booking of that day, output: [{}, {}, {}, {}, {}, {}]
+      const query = { date: date };
+      const bookings = await bookingCollection.find(query).toArray();
+
+      // step 3: for each service (Protita service er jonno booking ta kujbo)
+      services.forEach((service) => {
+        // step 4: find bookings for that service. output: [{}, {}, {}, {}]
+        const serviceBookings = bookings.filter(
+          (books) => books.treatment === service.name
+        );
+        // step 5: select slots for the service Bookings: ['', '', '', '']
+        const bookedSlots = serviceBookings.map((book) => book.slot);
+        // step 6: select those slots that are not in bookedSlots
+        const available = service.slots.filter(
+          (slot) => !bookedSlots.includes(slot)
+        );
+        //step 7: set available to slots to make it easier
+        service.slots = available;
+      });
+
+      res.send(services);
+    });
+
     /**
      * API Naming Convention
      * app.get('/booking') // get all bookings in this collection. or get more than one or by filter
@@ -57,8 +88,12 @@ async function run() {
         date: booking.date,
         patient: booking.patient,
       };
+      const exists = await bookingCollection.findOne(query);
+      if (exists) {
+        return res.send({ success: false, booking: exists });
+      }
       const result = await bookingCollection.insertOne(booking);
-      res.send(result);
+      return res.send({ success: true, result });
     });
   } finally {
   }
