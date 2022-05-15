@@ -31,6 +31,7 @@ const client = new MongoClient(uri, {
 
 // console.log(uri);
 
+// Verifying JWT
 const verifyJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -64,6 +65,32 @@ async function run() {
       res.send(result);
     });
 
+    // Get all user
+    app.get('/user', verifyJWT, async (req, res) => {
+      const users = await userCollection.find().toArray();
+      res.send(users);
+    });
+
+    // Make Admin
+    app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const requester = req.decoded.email;
+      const requesterAccount = await userCollection.findOne({
+        email: requester,
+      });
+      if (requesterAccount?.role === 'admin') {
+        const filter = { email: email };
+        const updateDoc = {
+          $set: { role: 'admin' },
+        };
+        const result = await userCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      } else {
+        return res.status(403).send({ message: 'Forbidden Access.' });
+      }
+    });
+
+    // Put User
     app.put('/user/:email', async (req, res) => {
       const email = req.params.email;
       const user = req.body;
@@ -122,6 +149,7 @@ async function run() {
      * app.delete('/booking/:id) //
      */
 
+    // Get Booking
     app.get('/booking', verifyJWT, async (req, res) => {
       const patient = req.query.patient;
       const decodedEmail = req.decoded.email;
@@ -134,6 +162,7 @@ async function run() {
       }
     });
 
+    // Post Booking
     app.post('/booking', async (req, res) => {
       const booking = req.body;
       const query = {
