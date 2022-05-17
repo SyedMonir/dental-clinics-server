@@ -117,7 +117,7 @@ async function run() {
       const token = jwt.sign(
         { email: email },
         process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: '1h' }
+        { expiresIn: '1d' }
       );
       res.send({ result, token });
     });
@@ -192,10 +192,24 @@ async function run() {
       return res.send({ success: true, result });
     });
 
-    // Add / Post Doctor
+    // Get All Doctor
+    app.get('/doctor', verifyJWT, verifyAdmin, async (req, res) => {
+      const doctors = await doctorCollection.find().toArray();
+      res.send(doctors);
+    });
+
+    // Add/Post Doctor
     app.post('/doctor', verifyJWT, verifyAdmin, async (req, res) => {
       const doctor = req.body;
       const result = await doctorCollection.insertOne(doctor);
+      res.send(result);
+    });
+
+    // Delete Doctor
+    app.delete('/doctor/:email', verifyJWT, verifyAdmin, async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const result = await doctorCollection.deleteOne(filter);
       res.send(result);
     });
   } finally {
