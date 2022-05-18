@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 // Mongodb
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // Server Port
 const port = process.env.PORT || 5000;
@@ -174,6 +174,14 @@ async function run() {
       } else {
         return res.status(403).send({ message: 'Forbidden Access.' });
       }
+    });
+
+    // Get booking by id
+    app.get('/booking/:id', verifyJWT, async (req, res) => {
+      const id = req.body.id;
+      const query = { _id: ObjectId(id) };
+      const result = await bookingCollection.findOne(query);
+      res.send(result);
     });
 
     // Post Booking
