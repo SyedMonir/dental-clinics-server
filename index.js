@@ -60,6 +60,9 @@ async function run() {
     const bookingCollection = client.db('dental_clinics').collection('booking');
     const userCollection = client.db('dental_clinics').collection('users');
     const doctorCollection = client.db('dental_clinics').collection('doctors');
+    const paymentsCollection = client
+      .db('dental_clinics')
+      .collection('payments');
 
     // Verify Admin
     const verifyAdmin = async (req, res, next) => {
@@ -220,6 +223,26 @@ async function run() {
       }
       const result = await bookingCollection.insertOne(booking);
       return res.send({ success: true, result });
+    });
+
+    // Updating Payment
+    app.patch('/booking/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const payment = req.body;
+      console.log(payment);
+      const filter = { _id: ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transitionId,
+        },
+      };
+      const result = await paymentsCollection.insertOne(payment);
+      const updatedBooking = await bookingCollection.updateOne(
+        filter,
+        updateDoc
+      );
+      res.send(updatedBooking);
     });
 
     // Get All Doctor
