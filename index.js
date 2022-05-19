@@ -12,6 +12,9 @@ require('dotenv').config();
 // Mongodb
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
+// Stripe
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
 // Server Port
 const port = process.env.PORT || 5000;
 
@@ -70,6 +73,25 @@ async function run() {
         return res.status(403).send({ message: 'Forbidden Access.' });
       }
     };
+
+    // Payment
+    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+      // const service = req.body;
+      // const price = service.price;
+      const { price } = req.body;
+      const amount = price * 100;
+
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card'],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
     // Get all
     app.get('/service', async (req, res) => {
@@ -178,7 +200,7 @@ async function run() {
 
     // Get booking by id
     app.get('/booking/:id', verifyJWT, async (req, res) => {
-      const id = req.body.id;
+      const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await bookingCollection.findOne(query);
       res.send(result);
